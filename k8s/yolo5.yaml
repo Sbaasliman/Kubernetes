@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yolo5
+  labels:
+    app: yolo5
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yolo5
+  template:
+    metadata:
+      labels:
+        app: yolo5
+    spec:
+      containers:
+        - name: yolo5
+          image: 933060838752.dkr.ecr.eu-central-1.amazonaws.com/yolo5_sabaa2:latest
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "512Mi"  # Increased memory request to 512Mi
+              cpu: "200m"      # Increased CPU request to 200m
+            limits:
+              memory: "2048Mi" # Increased memory limit to 2048Mi
+              cpu: "1000m"     # Increased CPU limit to 1000m"
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: yolo5-service
+spec:
+  selector:
+    app: yolo5
+  type: NodePort
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+
+---
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: yolo5
+  namespace: sabaa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: yolo5
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+---
+apiVersion: v1
+kind: ServiceAccount
+automountServiceAccountToken: true
+metadata:
+  name: sabaayolo5
+  namespace: sabaa
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::933060838752:role/Sabaa_yolo5
+
+
+
+
+
+
+
+
+
+
+
+

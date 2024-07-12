@@ -1,0 +1,93 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: horizontalpodautoscalers.autoscaling.k8s.io
+  annotations:
+    api-approved.kubernetes.io: unapproved
+spec:
+  group: autoscaling.k8s.io
+  scope: Namespaced
+  names:
+    kind: HorizontalPodAutoscaler
+    plural: horizontalpodautoscalers
+    singular: horizontalpodautoscaler
+    shortNames:
+      - hpa
+  versions:
+    - name: v2beta2
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                maxReplicas:
+                  type: integer
+                minReplicas:
+                  type: integer
+                scaleTargetRef:
+                  type: object
+                  properties:
+                    apiVersion:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                metrics:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      resource:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          targetAverageUtilization:
+                            type: integer
+    - name: v2
+      served: true
+      storage: false
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                maxReplicas:
+                  type: integer
+                minReplicas:
+                  type: integer
+                scaleTargetRef:
+                  type: object
+                  properties:
+                    apiVersion:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                metrics:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      resource:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          targetAverageUtilization:
+                            type: integer
+status:
+  storedVersions:
+    - v2beta2
