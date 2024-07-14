@@ -1,0 +1,4 @@
+persistence:
+  enabled: true
+  storageClassName: gp2  # Replace with your preferred storage class if different
+  size: 2Gi  # Adjust based on your storage needs
