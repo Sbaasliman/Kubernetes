@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+spec:
+  replicas: 1  # Number of Jenkins instances
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      containers:
+        - name: sabaajenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+              name: web
+            - containerPort: 50000
+              name: agent
+          resources:
+            requests:
+              cpu: 0.5
+              memory: 1Gi
+            limits:
+              cpu: 1
+              memory: 2Gi
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+
+      initContainers:
+        - name: tools
+          image: amazonlinux:2  # Base image that includes bash
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              yum install -y aws-cli
+              curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && \
+              chmod +x ./kubectl && \
+              mv ./kubectl /usr/local/bin/kubectl
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+
+        - name: fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 1000:1000 /var/jenkins_home"]
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+
+      volumes:
+        - name: jenkins-home
+          persistentVolumeClaim:
+            claimName: jenkinssabaa-pvc  # Name of your PVC
+
+
+---
+cd

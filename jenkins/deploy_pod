@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+
+    environment {
+        REGISTRY_URL = "933060838752.dkr.ecr.eu-central-1.amazonaws.com"
+        KUBECONFIG = '/var/lib/jenkins/workspace/Deploy-pod/config/config'  // Adjust the path as per your actual kubeconfig file path
+    }
+
+    parameters {
+        string(name: 'NAMESPACE', defaultValue: 'sabaa', description: 'Namespace where deployment will happen')
+        string(name: 'DEPLOYMENT1_NAME', defaultValue: 'polybot', description: 'Name of the deployment')
+        string(name: 'DEPLOYMENT2_NAME', defaultValue: 'yolo5', description: 'Name of the deployment')
+    }
+
+    stages {
+        stage('Fetch kubeconfig') {
+            steps {
+                // No need for withCredentials since kubeconfig file is already present
+                withEnv(['KUBECONFIG=${KUBECONFIG}']) {
+                    // Now you can use kubectl commands
+                    sh """
+                    aws eks --region us-east-1 update-kubeconfig --name Atech
+                    kubectl config use-context arn:aws:eks:us-east-1:933060838752:cluster/Atech
+                    kubectl get pods -n ${NAMESPACE}
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                echo "Starting deployment to EKS"
+
+                // Authenticate with ECR
+                script {
+                    echo "Authenticating with ECR"
+                    sh "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${REGISTRY_URL}"
+                }
+
+                // Update pods in Kubernetes (EKS)
+                script {
+                    echo "Updating deployments in namespace ${NAMESPACE}"
+                    sh """
+                    kubectl set image deployment/${DEPLOYMENT1_NAME} ${DEPLOYMENT1_NAME}=${REGISTRY_URL}/ploybot_sabaa2:latest -n ${NAMESPACE}
+                    kubectl set image deployment/${DEPLOYMENT2_NAME} ${DEPLOYMENT2_NAME}=${REGISTRY_URL}/yolo5_sabaa2:latest -n ${NAMESPACE}
+                    """
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jenkinssabaa-pv  # Give a unique name to your PV
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp2
+  persistentVolumeReclaimPolicy: Retain
+  awsElasticBlockStore:
+    volumeID: vol-09b8cef5b2b5b327a  # Replace with your actual Volume ID from AWS
+    fsType: ext4   # Update according to your filesystem type (optional)

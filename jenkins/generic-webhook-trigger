@@ -1,0 +1,70 @@
+
+pipeline {
+    agent any
+
+    environment {
+        REGISTRY_URL = "933060838752.dkr.ecr.eu-central-1.amazonaws.com"
+        NAMESPACE = "sabaa"
+        DEPLOYMENT1_NAME = "polybot"
+        DEPLOYMENT2_NAME = "polybot"
+        SONARQUBE_SERVER_URL = "http://35.157.162.26:9000"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout code from Git repository
+                git branch: 'main', credentialsId: 'gitrepo', url: 'https://github.com/Sbaasliman/Polybot_AWS.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                // Perform SonarQube analysis with Gradle
+                withCredentials([string(credentialsId: 'sonarqube', variable: 'SONARQUBE_TOKEN')]) {
+                    dir('Polybot_AWS/Polybot') {
+                        script {
+                            def scannerHome = tool 'sonarqube'
+                            withSonarQubeEnv("SonarQubeScanner") {
+                                sh "${scannerHome}/bin/sonar-scanner \
+                                   -Dsonar.projectKey=my-python-project \
+                                   -Dsonar.sources=. \
+                                   -Dsonar.host.url=${SONARQUBE_SERVER_URL} \
+                                   -Dsonar.login=${SONARQUBE_TOKEN}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build and Push Docker Image') {
+            steps {
+                // Log in to AWS ECR to push Docker image
+                script {
+                    sh "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${REGISTRY_URL}"
+                }
+
+                // Build and push Docker image to ECR
+                script {
+                    sh "docker build -t ${REGISTRY_URL}/ploybot_sabaa2:latest ./Polybot"
+                    sh "docker push ${REGISTRY_URL}/ploybot_sabaa2:latest"
+                }
+
+                // Trigger deployment job in Kubernetes (assuming 'Deploy-pod' job exists)
+                build job: 'Deploy-pod', parameters: [
+                    string(name: 'NAMESPACE', value: "${NAMESPACE}"),
+                    string(name: 'DEPLOYMENT1_NAME', value: "${DEPLOYMENT1_NAME}"),
+                    string(name: 'DEPLOYMENT2_NAME', value: "${DEPLOYMENT2_NAME}")
+                ]
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up workspace'
+            deleteDir() // Clean up workspace at the end
+        }
+    }
+}

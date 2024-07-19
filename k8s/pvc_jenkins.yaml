@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jenkinssabaa-pv
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: gp2
+  awsElasticBlockStore:
+    volumeID: vol-02e7872e758b452a3  # Ensure this matches the actual volume ID in AWS
+    fsType: ext4
+
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkinssabaa-pvc
+  namespace: sabaa
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: gp2
